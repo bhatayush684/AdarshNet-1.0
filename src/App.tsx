@@ -13,6 +13,7 @@ import VolunteerDashboard from "./pages/VolunteerDashboard";
 import VillageHeadDashboard from "./pages/VillageHeadDashboard";
 import CitizenPortal from "./pages/CitizenPortal";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Chatbot from "./components/Chatbot";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,8 @@ const App = () => (
           <Route path="/citizen" element={<ProtectedRoute allowedRoles={['citizen']}><CitizenPortal /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        {/* Global Chatbot mounted on every page */}
+        <Chatbot />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
