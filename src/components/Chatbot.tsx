@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { MessageCircle, X, Send } from 'lucide-react';
+import { loadChatbotState, saveChatbotState, type ChatbotState } from '@/lib/persistence';
 
 interface Message {
   text: string;
@@ -23,11 +24,17 @@ const faqs = [
 ];
 
 const Chatbot = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    { text: 'Hello! I\'m the AdarshNet assistant. Ask me anything about the platform!', isUser: false }
-  ]);
+  const initial = loadChatbotState({
+    isOpen: false,
+    messages: [{ text: "Hello! I'm the AdarshNet assistant. Ask me anything about the platform!", isUser: false }],
+  } as ChatbotState);
+  const [isOpen, setIsOpen] = useState(initial.isOpen);
+  const [messages, setMessages] = useState<Message[]>(initial.messages as Message[]);
   const [input, setInput] = useState('');
+
+  useEffect(() => {
+    saveChatbotState({ isOpen, messages });
+  }, [isOpen, messages]);
 
   const handleSend = () => {
     if (!input.trim()) return;

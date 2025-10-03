@@ -8,13 +8,24 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Navbar from '@/components/Navbar';
 import { MapPin, FolderKanban, PlusCircle, Download, BarChart3 } from 'lucide-react';
-import { getProjectsByOfficer, getAllVillages } from '@/lib/dummyData';
-import { useState } from 'react';
+import { getProjectsByOfficer, getAllVillages, projects as defaultProjects } from '@/lib/dummyData';
+import { useEffect, useMemo, useState } from 'react';
+import { addProject, getPersistedProjects } from '@/lib/persistence';
+import { useToast } from '@/hooks/use-toast';
 
 const OfficerDashboard = () => {
-  const projects = getProjectsByOfficer('2');
+  const { toast } = useToast();
+  const allProjects = useMemo(() => getPersistedProjects(defaultProjects), []);
+  const [projectsState, setProjectsState] = useState(allProjects);
+  const projects = useMemo(() => projectsState.filter(p => p.assignedOfficer === '2'), [projectsState]);
   const villages = getAllVillages().slice(0, 3);
   const [showProjectForm, setShowProjectForm] = useState(false);
+  const [form, setForm] = useState({ name: 'Community Water Tank', villageId: villages[0]?.id ?? 'v1', category: 'sanitation', budget: 750000, startDate: '2024-06-01', endDate: '2024-12-31' });
+
+  useEffect(() => {
+    // refresh state from persisted on mount
+    setProjectsState(getPersistedProjects(defaultProjects));
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -136,11 +147,11 @@ const OfficerDashboard = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Project Name</Label>
-                    <Input placeholder="Solar Panel Installation" defaultValue="Community Water Tank" />
+                    <Input placeholder="Solar Panel Installation" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
                   </div>
                   <div className="space-y-2">
                     <Label>Village</Label>
-                    <Select defaultValue="v1">
+                    <Select value={form.villageId} onValueChange={(val) => setForm({ ...form, villageId: val })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -153,7 +164,7 @@ const OfficerDashboard = () => {
                   </div>
                   <div className="space-y-2">
                     <Label>Category</Label>
-                    <Select defaultValue="sanitation">
+                    <Select value={form.category} onValueChange={(val) => setForm({ ...form, category: val })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -167,19 +178,26 @@ const OfficerDashboard = () => {
                   </div>
                   <div className="space-y-2">
                     <Label>Budget (₹)</Label>
-                    <Input type="number" placeholder="500000" defaultValue="750000" />
+                    <Input type="number" placeholder="500000" value={form.budget} onChange={(e) => setForm({ ...form, budget: Number(e.target.value) })} />
                   </div>
                   <div className="space-y-2">
                     <Label>Start Date</Label>
-                    <Input type="date" defaultValue="2024-06-01" />
+                    <Input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
                   </div>
                   <div className="space-y-2">
                     <Label>End Date</Label>
-                    <Input type="date" defaultValue="2024-12-31" />
+                    <Input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
                   </div>
                 </div>
                 <div className="mt-4 flex gap-2">
-                  <Button>Submit Proposal</Button>
+                  <Button onClick={() => {
+                    const id = `p${Date.now()}`;
+                    const newProj = { id, name: form.name, villageId: form.villageId, category: form.category as any, budget: Number(form.budget), startDate: form.startDate, endDate: form.endDate, progress: 0, status: 'pending' as const, assignedOfficer: '2' };
+                    addProject(newProj);
+                    setProjectsState(prev => [...prev, newProj]);
+                    toast({ title: 'Project proposal submitted', description: `${form.name} for ${form.villageId}` });
+                    setShowProjectForm(false);
+                  }}>Submit Proposal</Button>
                   <Button variant="outline" onClick={() => setShowProjectForm(false)}>Cancel</Button>
                 </div>
               </div>
@@ -228,14 +246,26 @@ const OfficerDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Button variant="outline" className="h-auto py-4 flex flex-col items-start">
+              <Button variant="outline" className="h-auto py-4 flex flex-col items-start" onClick={() => {
+                const csv = ['Name,Category,Budget,Progress,Status'].concat(projects.map(p => `${p.name},${p.category},${p.budget},${p.progress},${p.status}`)).join('\n');
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'monthly-progress.csv'; a.click(); URL.revokeObjectURL(url);
+              }}>
                 <Download className="w-5 h-5 mb-2 text-primary" />
                 <div className="text-left">
                   <div className="font-semibold">Monthly Progress Report</div>
                   <div className="text-xs text-muted-foreground">All assigned projects</div>
                 </div>
               </Button>
-              <Button variant="outline" className="h-auto py-4 flex flex-col items-start">
+              <Button variant="outline" className="h-auto py-4 flex flex-col items-start" onClick={() => {
+                const csv = ['Name,Budget'].concat(projects.map(p => `${p.name},${p.budget}`)).join('\n');
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'budget-utilization.csv'; a.click(); URL.revokeObjectURL(url);
+              }}>
                 <Download className="w-5 h-5 mb-2 text-secondary" />
                 <div className="text-left">
                   <div className="font-semibold">Budget Utilization Report</div>

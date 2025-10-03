@@ -1,23 +1,24 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { villages } from '@/lib/dummyData';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { loadSelectedVillage, saveSelectedVillage } from '@/lib/persistence';
 
 const VillageMap = () => {
-  const [selectedVillage, setSelectedVillage] = useState<string | null>(null);
+  const [selectedVillage, setSelectedVillage] = useState<string | null>(loadSelectedVillage());
 
   // Create a simple grid-based map visualization
   const mapPositions = [
-    { id: 'V001', x: 20, y: 30 },
-    { id: 'V002', x: 45, y: 25 },
-    { id: 'V003', x: 70, y: 35 },
-    { id: 'V004', x: 30, y: 55 },
-    { id: 'V005', x: 60, y: 50 },
-    { id: 'V006', x: 80, y: 60 },
-    { id: 'V007', x: 15, y: 70 },
-    { id: 'V008', x: 40, y: 75 },
-    { id: 'V009', x: 65, y: 80 },
-    { id: 'V010', x: 85, y: 75 },
+    { id: 'v1', x: 20, y: 30 },
+    { id: 'v2', x: 45, y: 25 },
+    { id: 'v3', x: 70, y: 35 },
+    { id: 'v4', x: 30, y: 55 },
+    { id: 'v5', x: 60, y: 50 },
+    { id: 'v6', x: 80, y: 60 },
+    { id: 'v7', x: 15, y: 70 },
+    { id: 'v8', x: 40, y: 75 },
+    { id: 'v9', x: 65, y: 80 },
+    { id: 'v10', x: 85, y: 75 },
   ];
 
   const getVillageByPosition = (posId: string) => {
@@ -25,6 +26,10 @@ const VillageMap = () => {
   };
 
   const selected = selectedVillage ? getVillageByPosition(selectedVillage) : null;
+
+  useEffect(() => {
+    saveSelectedVillage(selectedVillage);
+  }, [selectedVillage]);
 
   return (
     <Card>

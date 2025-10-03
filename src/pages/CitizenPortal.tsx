@@ -6,11 +6,15 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import Navbar from '@/components/Navbar';
 import { getAllProjects, getAllAnnouncements, getAllFeedbacks } from '@/lib/dummyData';
+import { useMemo, useState } from 'react';
+import { addFeedback, getPersistedFeedbacks } from '@/lib/persistence';
 
 const CitizenPortal = () => {
   const projects = getAllProjects().slice(0, 15);
   const announcements = getAllAnnouncements();
-  const feedbacks = getAllFeedbacks().slice(0, 5);
+  const [message, setMessage] = useState('The street lighting project has greatly improved safety in our area. Thank you!');
+  const persistedFeedbacks = useMemo(() => getPersistedFeedbacks(getAllFeedbacks()), []);
+  const feedbacks = persistedFeedbacks.slice(0, 5);
 
   return (
     <div className="min-h-screen bg-background">
@@ -59,8 +63,13 @@ const CitizenPortal = () => {
               <CardDescription>Share your thoughts</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Textarea placeholder="Your feedback about village development..." rows={6} defaultValue="The street lighting project has greatly improved safety in our area. Thank you!" />
-              <Button className="w-full">Submit Feedback</Button>
+              <Textarea placeholder="Your feedback about village development..." rows={6} value={message} onChange={(e) => setMessage(e.target.value)} />
+              <Button className="w-full" onClick={() => {
+                const id = `f${Date.now()}`;
+                addFeedback({ id, citizenName: 'Citizen', villageId: 'v1', message, timestamp: new Date().toISOString(), rating: 5 });
+                // naive reload of page state
+                window.location.reload();
+              }}>Submit Feedback</Button>
               <div className="pt-4 border-t">
                 <h4 className="font-semibold mb-3 text-sm">Recent Feedback</h4>
                 <div className="space-y-2">
